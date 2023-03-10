@@ -8,7 +8,7 @@ import retrofit2.http.Query
 interface ReversedGeocodingApi {
 
     @GET("reverse")
-    fun getCurrentWeather(
+    fun getCountryName(
         // здесь указываются обязательные (и не очень) параметры запроса согласно документации
         @Query("lat") latitude: String, // широта
         @Query("lon") longitude: String, // долгота
