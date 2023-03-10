@@ -9,8 +9,8 @@ interface WeatherApi {
 
     @GET("current.json")
     fun getCurrentWeather(
-        @Query("key") apiKey: String,
-        @Query("q") countryName: String,
-        @Query("aqi") airQualityData: String
+        @Query("key") apiKey: String, // Api ключ
+        @Query("q") countryName: String, // q - Query (запрос). Передается имя города
+        @Query("aqi") airQualityData: String // данные, связанные с сервером (передается NO или YES, не нужно, поэтому NO)
     ): Deferred<CurrentWeather>
 }

@@ -1,6 +1,10 @@
 package data.remote
 
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
+import data.remote.api.ReversedGeocodingApi
+import data.remote.api.WeatherApi
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -13,12 +17,29 @@ enum class RetrofitType(val baseUrl: String) {
     REVERSE_GEOCODER(REVERSE_GEOCODER_BASE_URL)
 }
 
-class RetrofitClient
+class RetrofitClient {
 
-fun getClient(retrofitType: RetrofitType): Retrofit {
-    return Retrofit.Builder()
-        .baseUrl(retrofitType.baseUrl) // Тип url
-        .addCallAdapterFactory(CoroutineCallAdapterFactory.invoke()) // фабрика поддержки корутин
-        .addConverterFactory(GsonConverterFactory.create()) // фабрика конвертации (зависит от ответа сервера)
-        .build()
+    fun getClient(): OkHttpClient{ // класс для получения логов от сервера
+        val logging = HttpLoggingInterceptor()
+        logging.level = HttpLoggingInterceptor.Level.BODY // уровень логгирования BODY - тело запроса
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(logging) // добавить перехватчика запросов и ответов
+        return okHttpClient.build()
+    }
+
+    fun getRetrofit(retrofitType: RetrofitType): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(retrofitType.baseUrl) // Тип url
+            .addCallAdapterFactory(CoroutineCallAdapterFactory.invoke()) // фабрика поддержки корутин
+            .addConverterFactory(GsonConverterFactory.create()) // фабрика конвертации (зависит от ответа сервера)
+            .build()
+    }
+
+    fun getWeatherApi(retrofit: Retrofit): WeatherApi{ // возвращает Api погоды
+        return retrofit.create(WeatherApi::class.java)
+    }
+
+    fun getReversedGeocodingApi(retrofit: Retrofit): ReversedGeocodingApi{ // возвращает Api геолокации
+        return retrofit.create(ReversedGeocodingApi::class.java)
+    }
 }
