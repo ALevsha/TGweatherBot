@@ -3,20 +3,21 @@ package bot
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
-import com.github.kotlintelegrambot.dispatcher.*
+import com.github.kotlintelegrambot.dispatcher.callbackQuery
+import com.github.kotlintelegrambot.dispatcher.command
+import com.github.kotlintelegrambot.dispatcher.location
+import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatAction
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.InlineKeyboardMarkup
 import com.github.kotlintelegrambot.entities.TelegramFile
 import com.github.kotlintelegrambot.entities.keyboard.InlineKeyboardButton
 import data.remote.API_KEY
-import data.remote.models.ReversedCountry
+import data.remote.models.openweathermap.Coord
 import data.remote.repository.WeatherRepository
-import jdk.jfr.internal.LogLevel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.logging.Filter
 
 private const val GIF_WAITING_URL = "https://media.tenor.com/OBEfKgDoCogAAAAC/pulp-fiction-john-travolta.gif"
 
@@ -26,7 +27,8 @@ private const val BOT_TOKEN = "5975392537:AAFRa5MjfJOwNUkdAwh27pQo7ivRDKr7_x4" /
 
 class WeatherBot(private val weatherRepository: WeatherRepository) {
 
-    private lateinit var country: String
+    private lateinit var cityCoord: Coord
+    private lateinit var cityName: String
     private var _chatId: ChatId? = null
     private val chatId by lazy { requireNotNull(_chatId) } // выкидывает значение, если не null иначе Exception
     fun createBot(): Bot {
@@ -47,13 +49,13 @@ class WeatherBot(private val weatherRepository: WeatherRepository) {
             bot.sendMessage(chatId = chatId, text = "Отправь мне свою локацию")
             location {
                 CoroutineScope(Dispatchers.IO).launch {
-                    val userCountry = weatherRepository.getReverseGeocodingCountryName(
+                    val userCity = weatherRepository.getCityName(
                         location.latitude.toString(),
-                        location.longitude.toString(),
-                        "json"
-                    ).address.country
+                        location.longitude.toString()
+                    )
 
-                    country = userCountry
+                    cityCoord = Coord(userCity.lat.toDouble(), userCity.lon.toDouble())
+                    cityName = userCity.display_name
 
                     val inlineKeyboardMarkup = InlineKeyboardMarkup.create(
                         listOf(
@@ -66,7 +68,7 @@ class WeatherBot(private val weatherRepository: WeatherRepository) {
 
                     bot.sendMessage(
                         chatId = chatId,
-                        text = "Твой город - ${country}, верно? \n Если неверно, скинь локацию еще раз",
+                        text = "Твой город - ${cityName}, верно? \n Если неверно, скинь локацию еще раз",
                         replyMarkup = inlineKeyboardMarkup
                     )
                 }
@@ -76,7 +78,7 @@ class WeatherBot(private val weatherRepository: WeatherRepository) {
         callbackQuery(callbackData = "enterManually") {
             bot.sendMessage(chatId = chatId, text = "Хорошо, введи свой город.")
             message(com.github.kotlintelegrambot.extensions.filters.Filter.Text) {
-                country = message.text.toString()
+                cityName = message.text.toString()
 
                 val inlineKeyboardMarkup = InlineKeyboardMarkup.create(
                     listOf(
@@ -87,11 +89,23 @@ class WeatherBot(private val weatherRepository: WeatherRepository) {
                     )
                 )
 
+                CoroutineScope(Dispatchers.IO).launch{
+                    val request = weatherRepository.getCityCoord(
+                        city = cityName,
+                        country = "Russia",
+                        format = "json"
+                    )
+
+                    cityCoord = Coord(request[0].lat.toDouble(),request[0].lon.toDouble())
+                }
+
+
                 bot.sendMessage(
                     chatId = chatId,
-                    text = "Твой город - ${country}, верно? \n Если неверно, введи свой город еще раз",
+                    text = "Твой город - ${cityName}, верно? \n Если неверно, введи свой город еще раз",
                     replyMarkup = inlineKeyboardMarkup
                 )
+
             }
         }
 
@@ -114,24 +128,25 @@ class WeatherBot(private val weatherRepository: WeatherRepository) {
             }
             CoroutineScope(Dispatchers.IO).launch {
                 val currentWeather = weatherRepository.getCurrentWeather(
-                    API_KEY,
-                    country,
-                    "no"
+                    lat = cityCoord.lat.toString(),
+                    lon = cityCoord.lon.toString(),
+                    apiKey = API_KEY
                 )
                 bot.sendMessage(
                     chatId = chatId,
                     text = """
-                        ☁ Облачность: ${currentWeather.clouds}
-                        🌡 Температура (градусы): ${currentWeather.main.temp}
-                        🙎 ‍Ощущается как: ${currentWeather.main.feels_like}
-                        💧 Влажность: ${currentWeather.main.humidity}
-                        🌪 Направление ветра: ${currentWeather.wind.speed}
+                        ☁ Облачность: ${currentWeather.clouds.all}%
+                        🌡 Температура (градусы): ${(currentWeather.main.temp - 273).toInt()}
+                        🙎 ‍Ощущается как: ${(currentWeather.main.feels_like - 273).toInt()}
+                        💧 Влажность: ${currentWeather.main.humidity}%
+                        🌪 Направление ветра (азимут): ${currentWeather.wind.deg}
+                        🌪 Скорость ветра (м/с): ${currentWeather.wind.speed}
                         🧭 Давление: ${currentWeather.main.pressure}
                     """.trimIndent()
                     )
                 bot.sendMessage(chatId = chatId, text = "Если вы хотите запросить погоду еще раз,\n" +
                         " воспользуйтесь командой /weather")
-                country = ""
+                cityCoord = Coord(0.0,0.0)
             }
         }
     }

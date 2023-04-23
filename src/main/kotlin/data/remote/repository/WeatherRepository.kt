@@ -1,26 +1,32 @@
 package data.remote.repository
 
-import data.remote.api.ReversedGeocodingApi
+import data.remote.api.CityApi
 import data.remote.api.WeatherApi
-import data.remote.models.CurrentWeather
-import data.remote.models.ReversedCountry
+import data.remote.models.nominatim.City
+import data.remote.models.openweathermap.CurrentWeather
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class WeatherRepository(
     private val weatherApi: WeatherApi,
-    private val reversedGeocodingApi: ReversedGeocodingApi
+    private val reversedGeocodingApi: CityApi
 ) {
 
-    suspend fun getCurrentWeather(apiKey: String, countryName: String, airQualityData: String): CurrentWeather{
+    suspend fun getCurrentWeather(lat: String, lon: String, apiKey: String): CurrentWeather {
         return withContext(Dispatchers.IO){
-            weatherApi.getCurrentWeather(apiKey, countryName, airQualityData)
-        }.await()
+            weatherApi.getCurrentWeather(lat, lon, apiKey)
+        }
     }
 
-    suspend fun getReverseGeocodingCountryName(latitude: String, longitude: String, format: String): ReversedCountry{
+    suspend fun getCityCoord(city: String, country: String, format: String): List<City> {
         return withContext(Dispatchers.IO){
-            reversedGeocodingApi.getCountryName(latitude, longitude, format)
-        }.await()
+            reversedGeocodingApi.getCityCoord(city, country, format)
+        }
+    }
+
+    suspend fun getCityName(lat: String, lon: String): City{
+        return withContext(Dispatchers.IO){
+            reversedGeocodingApi.getCityName(lat, lon)
+        }
     }
 }

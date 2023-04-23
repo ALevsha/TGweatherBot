@@ -1,16 +1,15 @@
 package data.remote.api
 
-import data.remote.models.CurrentWeather
-import kotlinx.coroutines.Deferred
+import data.remote.models.openweathermap.CurrentWeather
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface WeatherApi {
 
-    @GET("current.json")
-    fun getCurrentWeather(
-        @Query("key") apiKey: String, // Api ключ
-        @Query("q") countryName: String, // q - Query (запрос). Передается имя города
-        @Query("aqi") airQualityData: String // данные, связанные с сервером (передается NO или YES, не нужно, поэтому NO)
-    ): Deferred<CurrentWeather>
+    @GET("weather")
+    suspend fun getCurrentWeather(
+        @Query("lat") lat: String, // широта
+        @Query("lon") lon: String, // долгота
+        @Query("appid") apiKey: String // API key
+    ): CurrentWeather
 }

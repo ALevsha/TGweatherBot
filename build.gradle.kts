@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.8.0"
+    kotlin("jvm") version "1.7.0"
     application
 }
 
@@ -13,7 +13,7 @@ repositories {
 
 dependencies {
     // Telegram bot api
-    implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.6")
+    implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.7")
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     // Retrofit
@@ -29,7 +29,7 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(8)
+   // jvmToolchain(8)
 }
 
 application {

@@ -14,8 +14,8 @@ fun main() {
     val weatherRetrofit = RetrofitClient().getRetrofit(RetrofitType.WEATHER)
     val reverseRetrofit = RetrofitClient().getRetrofit(RetrofitType.REVERSE_GEOCODER)
     val weatherApi = RetrofitClient().getWeatherApi(weatherRetrofit)
-    val reverseApi = RetrofitClient().getReversedGeocodingApi(reverseRetrofit)
-    val weatherRepository = WeatherRepository(weatherApi, reverseApi)
+    val cityApi = RetrofitClient().getCityApi(reverseRetrofit)
+    val weatherRepository = WeatherRepository(weatherApi, cityApi)
     val weatherBot = WeatherBot(weatherRepository).createBot()
     weatherBot.startPolling()
 }

@@ -1,4 +1,4 @@
-package data.remote.models
+package data.remote.models.openweathermap
 
 data class CurrentWeather(
     val base: String,
